@@ -135,7 +135,7 @@
       width: 100%;
       height: 100%;
       min-height: 0;
-      padding: 88px 38px 44px 36px;
+      padding: 88px 38px 88pt 36px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -151,29 +151,25 @@
       overflow: hidden;
       display: -webkit-box;
       -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
-      line-clamp: 3;
-    }
-    .say-user, .say-reply {
-      max-width: 100%;
-      font-size: 16px;
-      line-height: 1.78;
-      white-space: pre-wrap;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-      overflow: hidden;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
     }
     .say-history {
       flex: 1 1 auto;
       min-height: 0;
+      max-height: 100%;
       overflow-y: auto;
       overflow-x: hidden;
       padding-right: 6px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      justify-content: flex-end;
+      gap: 12px;
       scrollbar-width: thin;
       scrollbar-color: rgba(120, 87, 95, 0.38) transparent;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-y;
     }
     .say-history::-webkit-scrollbar {
       width: 6px;
@@ -188,7 +184,7 @@
     .say-entry {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
       padding-bottom: 2px;
     }
     .say-entry-user, .say-entry-reply {
@@ -197,58 +193,17 @@
       white-space: pre-wrap;
       word-break: break-word;
       overflow-wrap: anywhere;
+      max-width: 88%;
     }
     .say-entry-user {
       color: #7b5d66;
+      align-self: flex-end;
+      text-align: right;
     }
     .say-entry-reply {
       color: #433136;
-    }
-    .say-user {
-      flex: 0 0 auto;
-      min-height: 0;
-      max-height: 80px;
-      color: #7b5d66;
-      margin-bottom: 10px;
-      display: block;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding-right: 6px;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(150, 113, 121, 0.34) transparent;
-    }
-    .say-user::-webkit-scrollbar {
-      width: 6px;
-    }
-    .say-user::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .say-user::-webkit-scrollbar-thumb {
-      background: rgba(150, 113, 121, 0.34);
-      border-radius: 999px;
-    }
-    .say-reply {
-      flex: 0 0 auto;
-      min-height: 52px;
-      max-height: 84px;
-      color: #433136;
-      display: block;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding-right: 6px;
-      margin-bottom: 10px;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(120, 87, 95, 0.38) transparent;
-    }
-    .say-reply::-webkit-scrollbar {
-      width: 6px;
-    }
-    .say-reply::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .say-reply::-webkit-scrollbar-thumb {
-      background: rgba(120, 87, 95, 0.38);
-      border-radius: 999px;
+      align-self: flex-start;
+      text-align: left;
     }
     .food-cloud {
       position: fixed;
@@ -375,9 +330,12 @@
   <div class="say-panel" id="sayPanel">
     <div class="say-panel-inner">
       <div class="say-status" id="sayStatus"></div>
-      <div class="say-user" id="sayUser">你：还没有开始说话。</div>
-      <div class="say-reply" id="sayReply">Moy：我在这里，想听你说今天发生的事。</div>
-      <div class="say-history" id="sayHistory"></div>
+      <div class="say-history" id="sayHistory">
+        <div class="say-entry" id="currentSayEntry">
+          <div class="say-entry-user" id="sayUser">你：还没有开始说话。</div>
+          <div class="say-entry-reply" id="sayReply">Moy：我在这里，想听你说今天发生的事。</div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="mood-cloud" id="moodCloud"></div>
@@ -483,6 +441,7 @@
     let moySpeechObjectUrl = '';
     let backgroundMusicAudio = null;
     let backgroundMusicEnabled = true;
+    let sayHistoryPinnedToBottom = true;
     const BACKGROUND_MUSIC_SRC = './1.mp3';
     const DIALOGUE_HISTORY_STORAGE_KEY = 'moyConversationHistory';
     const RELATIONSHIP_MEMORY_STORAGE_KEY = 'moyRelationshipMemory';
@@ -656,17 +615,18 @@
         }
         const entry = document.createElement('div');
         entry.className = 'say-entry';
-        const userEl = document.createElement('div');
-        userEl.className = 'say-entry-user';
-        userEl.textContent = `你：${userTurn.content}`;
         const replyEl = document.createElement('div');
         replyEl.className = 'say-entry-reply';
         replyEl.textContent = `Moy：${assistantTurn.content}`;
-        entry.appendChild(userEl);
+        const userEl = document.createElement('div');
+        userEl.className = 'say-entry-user';
+        userEl.textContent = `你：${userTurn.content}`;
         entry.appendChild(replyEl);
-        sayHistory.appendChild(entry);
+        entry.appendChild(userEl);
+        sayHistory.insertBefore(entry, sayHistory.firstChild);
       }
-      scrollSayHistoryToBottom();
+      sayHistoryPinnedToBottom = true;
+      scrollSayHistoryToBottom(true);
     }
 
     function rememberUnique(memoryList, items, maxItems = 12) {
@@ -747,12 +707,27 @@
       return sections.join('\n');
     }
 
-    function scrollSayHistoryToBottom() {
+    function isSayHistoryNearBottom() {
       if (!sayHistory) {
+        return true;
+      }
+      const threshold = 24;
+      return sayHistory.scrollHeight - sayHistory.scrollTop - sayHistory.clientHeight <= threshold;
+    }
+
+    function scrollSayHistoryToBottom(force = false) {
+      if (!sayHistory) {
+        return;
+      }
+      if (!force && !sayHistoryPinnedToBottom) {
         return;
       }
       sayHistory.scrollTop = sayHistory.scrollHeight;
     }
+
+    sayHistory?.addEventListener('scroll', () => {
+      sayHistoryPinnedToBottom = isSayHistoryNearBottom();
+    });
 
     function pushConversationTurn(userText, replyText) {
       const cleanUserText = String(userText || '').trim();
@@ -769,16 +744,16 @@
 
       const entry = document.createElement('div');
       entry.className = 'say-entry';
-      const userEl = document.createElement('div');
-      userEl.className = 'say-entry-user';
-      userEl.textContent = `你：${cleanUserText}`;
       const replyEl = document.createElement('div');
       replyEl.className = 'say-entry-reply';
       replyEl.textContent = cleanReplyText;
-      entry.appendChild(userEl);
+      const userEl = document.createElement('div');
+      userEl.className = 'say-entry-user';
+      userEl.textContent = `你：${cleanUserText}`;
       entry.appendChild(replyEl);
+      entry.appendChild(userEl);
       sayHistory.appendChild(entry);
-      scrollSayHistoryToBottom();
+      scrollSayHistoryToBottom(isSayHistoryNearBottom());
       updateRelationshipMemory(cleanUserText, cleanReplyText);
       saveConversationHistory();
     }
@@ -1667,18 +1642,18 @@
     }
 
     function setSayState(status, userText, replyText, shouldSpeak = false) {
+      const shouldStickToBottom = isSayHistoryNearBottom();
       sayStatus.textContent = status;
       if (typeof userText === 'string') {
         sayUser.textContent = `你：${userText}`;
-        sayUser.scrollTop = sayUser.scrollHeight;
       }
       if (typeof replyText === 'string') {
         sayReply.textContent = replyText;
-        sayReply.scrollTop = sayReply.scrollHeight;
         if (shouldSpeak) {
           speakMoyReply(replyText);
         }
       }
+      scrollSayHistoryToBottom(shouldStickToBottom);
     }
 
     function createHexId() {
