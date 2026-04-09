@@ -90,22 +90,6 @@
     .hair-item:hover { transform: scale(1.06); border-color: #bbb; }
     .hair-item.selected { border-color: #333; }
     .hair-sections { overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
-    .debug-status {
-      position: fixed;
-      left: 14px;
-      bottom: 14px;
-      z-index: 1200;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: rgba(22, 22, 26, 0.78);
-      color: #f6f2ea;
-      font-size: 12px;
-      line-height: 1.5;
-      pointer-events: none;
-      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
-      backdrop-filter: blur(8px);
-      min-width: 170px;
-    }
     .say-btn {
       position: fixed;
       left: 50%;
@@ -306,14 +290,14 @@
     }
     .camera-feed {
       position: fixed;
-      right: 20px;
-      top: 20px;
-      width: 168px;
+      left: 18px;
+      top: 50%;
+      width: 150px;
       border-radius: 16px;
-      transform: scaleX(-1);
+      transform: translateY(-50%) scaleX(-1);
       opacity: 0;
       pointer-events: none;
-      z-index: 900;
+      z-index: 100;
       box-shadow: 0 18px 40px rgba(0,0,0,0.18);
       transition: opacity 0.2s ease;
     }
@@ -404,7 +388,6 @@
   <button class="say-btn" id="sayBtn" type="button" title="按住说话，松开发送">
     <img src="./ym/say.PNG" alt="say" />
   </button>
-  <div class="debug-status" id="debugStatus">waike: 1<br>切换状态: 空闲<br>发型框: 关闭</div>
   <div class="hair-overlay" id="hairOverlay">
     <div class="hair-modal">
       <div class="hair-modal-header">
@@ -431,7 +414,6 @@
     const anjianList = document.getElementById('anjianList');
     const waikeImage = document.getElementById('waikeImage');
     const diBackground = document.getElementById('diBackground');
-    const debugStatus = document.getElementById('debugStatus');
     const sayBtn = document.getElementById('sayBtn');
     const foodCloud = document.getElementById('foodCloud');
     const moodCloud = document.getElementById('moodCloud');
@@ -1409,7 +1391,7 @@
       } else if (feedCount <= 8) {
         triggerPetMoodBurst(2);
         petEye.src = `./jb/eye/1b6.GIF?t=${Date.now()}`;
-        petMouth.src = `./jb/mouse/1b3.GIF?t=${Date.now()}`;
+        petMouth.src = `./jb/mouse/1b4.GIF?t=${Date.now()}`;
         window.setTimeout(() => {
           petEye.src = './jb/eye/6.PNG';
           petMouth.src = './jb/mouse/3.PNG';
@@ -2008,9 +1990,7 @@
     }
 
     function updateDebugStatus(extraText = '') {
-      const hairOverlayEl = document.getElementById('hairOverlay');
-      const hairOpen = !!hairOverlayEl && hairOverlayEl.classList.contains('open');
-      debugStatus.innerHTML = `waike: ${currentIndex}<br>切换状态: ${switching ? '切换中' : '空闲'}<br>发型框: ${hairOpen ? '打开' : '关闭'}${extraText ? `<br>${extraText}` : ''}`;
+      return;
     }
 
     function clearFocusFaceTimers() {
